@@ -5,12 +5,12 @@ import java.util.ArrayList;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
-public class FileOperations {
+public class RecoveryFromTrash {
 
     @BeforeEach
     void requestConfig() {
 
-        RestAssured.baseURI = "https://cloud-api.yandex.net/v1/disk/resources";
+        RestAssured.baseURI = "https://cloud-api.yandex.net/v1/disk";
         RestAssured.requestSpecification = given()
                 .log().method()
                 .log().uri()
@@ -19,13 +19,13 @@ public class FileOperations {
     }
 
     @Test
-    void createDeleteFile() throws InterruptedException {
+    void recoveryFile() throws InterruptedException {
 
         System.out.println("=====Create folder=====");
         given()
                 .when()
                 .queryParam("path", "myTestDiskForAuto")
-                .put()
+                .put("/resources")
                 .then()
                 .log().status().log().body()
                 .assertThat().statusCode(201)
@@ -38,7 +38,7 @@ public class FileOperations {
                 .when()
                 .queryParam("path", "myTestDiskForAuto/cvety_cherep_7642.jpg")
                 .queryParam("url", "https://avatarko.ru/img/kartinka/8/cvety_cherep_7642.jpg")
-                .post("/upload")
+                .post("/resources/upload")
                 .then()
                 .log().status().log().body()
                 .assertThat().statusCode(202);
@@ -50,7 +50,7 @@ public class FileOperations {
                 given()
                         .when()
                         .queryParam("path", "myTestDiskForAuto")
-                        .get()
+                        .get("/resources")
                         .then()
                         .log().status().log().body()
                         .assertThat().statusCode(200)
@@ -65,25 +65,35 @@ public class FileOperations {
                 .when()
                 .queryParam("path", "myTestDiskForAuto/cvety_cherep_7642.jpg")
                 .queryParam("md5", md5File)
-                .queryParam("permanently", true)
-                .delete()
+                .queryParam("permanently", false)
+                .delete("/resources")
                 .then()
                 .log().status().log().body()
-                .assertThat()
-                .statusCode(anyOf(is(202), is(204)));
+                .assertThat().statusCode(anyOf(is(202), is(204)));
 
         System.out.println("\n");
 
-        System.out.println("=====Delete folder=====");
+        System.out.println("=====Recovery File=====");
+        given()
+                .when()
+                .queryParam("path", "cvety_cherep_7642.jpg")
+                .queryParam("name", "cvety_cherep_7642_recovered.jpg")
+                .put("/trash/resources/restore")
+                .then()
+                .log().status().log().body()
+                .assertThat().statusCode(201);
+
+        System.out.println("\n");
+
+        System.out.println("=====Delete Folder=====");
         given()
                 .when()
                 .queryParam("path", "myTestDiskForAuto")
                 .queryParam("permanently", true)
-                .delete()
+                .delete("/resources")
                 .then()
                 .log().status().log().body()
-                .assertThat()
-                .statusCode(anyOf(is(202), is(204)));
+                .assertThat().statusCode(anyOf(is(202), is(204)));
 
     }
 }
